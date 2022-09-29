@@ -42,7 +42,7 @@ const createUrl = async (req, res) => {
     const createUrl = await urlModel
       .findOne({ shortUrl: sortu })
       .select({ __v: 0 });
-    return res.status(201).send({ status: true, date: createUrl });
+    return res.status(201).send({ status: true, data: createUrl });
   } catch (err) {
     return res.status(500).send({ status: false, message: err.message });
   }
@@ -51,12 +51,12 @@ const createUrl = async (req, res) => {
 const findUrl = async (req, res) => {
   try {
     const requestBody = req.params.urlCode;
-    if (!valid.isValidObjectId(requestBody)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Not valid objectId" });
-    }
-    const findUrl = await urlModel.findById(requestBody);
+    // if (!valid.isValidObjectId(requestBody)) {
+    //   return res
+    //     .status(400)
+    //     .send({ status: false, message: "Not valid objectId" });
+    // }
+    const findUrl = await urlModel.findOne({urlCode:requestBody});
     if (!findUrl) {
       return res.status(404).send({ status: false, message: "URL not found" });
     }
