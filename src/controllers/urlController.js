@@ -3,7 +3,6 @@ const shortid = require("shortid");
 const valid = require("../validation/validators");
 const validUrl = require('valid-url')
 const redis = require("redis");
-
 const { promisify } = require("util");
 
 //Connect to redis
@@ -54,7 +53,7 @@ const createUrl = async (req, res) => {
     cahcedLinkData = JSON.parse(cahcedLinkData)
 
     if (cahcedLinkData) {
-      return res.status(409).send({ status: false, message: "LongUrl already shorted....", shortUrl: cahcedLinkData.shortUrl });
+      return res.status(409).send({ status: false, message: "LongUrl already shorted in cahceData....", shortUrl: cahcedLinkData.shortUrl });
     } else {
       let uniqueUrl = await urlModel.findOne({ longUrl });
       await SET_ASYNC(`${longUrl}`, JSON.stringify(uniqueUrl))
@@ -86,8 +85,7 @@ const createUrl = async (req, res) => {
 
     //create document amd send response
     let data=await urlModel.create(requestBody);
-    //await SET_ASYNC(`${data}`, JSON.stringify(data))
-    const createUrl = await urlModel.findOne({ shortUrl }).select({ _id: 0, __v: 0, createdAt: 0, updatedAt: 0 });
+    const createUrl = ({ urlCode: data.urlCode ,longUrl: data.longUrl, shortUrl: data.shortUrl})
     return res.status(201).send({ status: true, date: createUrl });
 
   }
