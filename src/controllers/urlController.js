@@ -8,11 +8,11 @@ const { promisify } = require("util");
 
 //Connect to redis
 const redisClient = redis.createClient(
-  12538,
-  "redis-12538.c212.ap-south-1-1.ec2.cloud.redislabs.com",
+  15349,
+  "redis-15349.c305.ap-south-1-1.ec2.cloud.redislabs.com",
   { no_ready_check: true }
 );
-redisClient.auth("4okMYxBqjrdHQokYaLMKtALtlgrrGGri", function (err) {
+redisClient.auth("efy1fmMnnF1cb6qO4Uqn7aeEfycP8qyT", function (err) {
   if (err) throw err;
 });
 
@@ -47,27 +47,46 @@ const createUrl = async (req, res) => {
     if (!validUrl.isUri(longUrl)) {
       return res.status(400).send({ status: false, message: 'Invalid URL' })
     }
-    let uniqueUrl = await urlModel.findOne({ longUrl });
-    if (uniqueUrl) {
-      return res.status(409).send({ status: false, message: "LongUrl already shorted", shortUrl: uniqueUrl.shortUrl });
+
+    //validate uniqueness of longUrl
+    //find longUrl in cahedData
+    let cahcedLinkData = await GET_ASYNC(`${longUrl}`)
+    cahcedLinkData = JSON.parse(cahcedLinkData)
+
+    if (cahcedLinkData) {
+      return res.status(409).send({ status: false, message: "LongUrl already shorted....", shortUrl: cahcedLinkData.shortUrl });
+    } else {
+      let uniqueUrl = await urlModel.findOne({ longUrl });
+      await SET_ASYNC(`${longUrl}`, JSON.stringify(uniqueUrl))
+      if (uniqueUrl) {
+        return res.status(409).send({ status: false, message: "LongUrl already shorted", shortUrl: uniqueUrl.shortUrl });
+      }
     }
 
     //generate shortId and add in requestBody
-    let sort = shortid.generate();
-    requestBody.urlCode = sort;
-
-    //validate uniqueness of urlCode
-    let uniqueUrlCode = await urlModel.findOne({ urlCode: sort });
-    if (uniqueUrlCode) {
-      return res.status(400).send({ status: false, message: "urlCode already exist" });
-    }
+    let urlCode = shortid.generate();
+    requestBody.urlCode = urlCode;
 
     //create shortUrl and add in requestBody
-    let shortUrl = `http://localhost:3000/${sort}`;
+    let shortUrl = `http://localhost:3000/${urlCode}`;
     requestBody.shortUrl = shortUrl;
+
+    //validate uniqueness of sortId
+    //find sortId in cahedData
+    let cahcedSort = await GET_ASYNC(`${urlCode}`)
+    if (cahcedSort) {
+      return res.status(409).send({ status: false, message: "shortid already present in cahedData...." });
+    } else {
+      let uniqueSort = await urlModel.findOne({urlCode });
+      await SET_ASYNC(`${urlCode}`, JSON.stringify(uniqueSort))
+      if (uniqueSort) {
+        return res.status(409).send({ status: false, message: "shortid already present in db" });
+      }
+    }
 
     //create document amd send response
     let data=await urlModel.create(requestBody);
+    //await SET_ASYNC(`${data}`, JSON.stringify(data))
     const createUrl = await urlModel.findOne({ shortUrl }).select({ _id: 0, __v: 0, createdAt: 0, updatedAt: 0 });
     return res.status(201).send({ status: true, date: createUrl });
 
@@ -84,19 +103,25 @@ const findUrl = async (req, res) => {
   try {
     const urlCode = req.params.urlCode;
 
-    const findUrl = await urlModel.findOne({ urlCode });
-    if (!findUrl) {
-      return res.status(404).send({ status: false, message: "shortUrl not found" });
+    //validation for urlCode
+    if (!shortid.isValid(urlCode)) {
+      return res.status(400).send({ status: false, message: "Invalid urlCode" });
     }
 
-    let cahcedLinkData = await GET_ASYNC(`${req.params.urlCode}`)
+    //find urlCode in cahedData
+    let cahcedLinkData = await GET_ASYNC(`${urlCode}`)
     cahcedLinkData = JSON.parse(cahcedLinkData)
+
+    //redirect to longUrl
     if (cahcedLinkData) {
       return res.status(302).redirect(cahcedLinkData.longUrl);
     } else {
-      let fullUrl = await urlModel.findOne({ urlCode: req.params.urlCode });
-      await SET_ASYNC(`${req.params.urlCode}`, JSON.stringify(fullUrl))
-      return res.status(302).redirect(findUrl.longUrl);
+      let fullUrl = await urlModel.findOne({ urlCode: urlCode });
+      if (!fullUrl) {
+        return res.status(404).send({ status: false, message: "ShortUrl not found" });
+      }
+      await SET_ASYNC(`${urlCode}`, JSON.stringify(fullUrl))
+      return res.status(302).redirect(fullUrl.longUrl);
     }
   }
   catch (err) {

@@ -6,12 +6,9 @@ const isEmpty = (value) => {
   return true;
 };
 
-
 const isValidObjectId = (data) => {
   return mongoose.Types.ObjectId.isValid(data)
 }
-
-
 
 module.exports = {
   isEmpty, isValidObjectId

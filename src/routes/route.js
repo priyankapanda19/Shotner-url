@@ -8,4 +8,14 @@ router.get('/test-api',(req,res)=>{
 
 router.post('/url/shorten',urlController.createUrl)
 router.get('/:urlCode',urlController.findUrl)
+
+
+//errorHandling for wrong address
+router.all("/**", function (_, res) {
+    res.status(400).send({
+        status: false,
+        msg: "The api you request is not available"
+    })
+})
+
 module.exports=router
