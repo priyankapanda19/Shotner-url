@@ -5,6 +5,7 @@ const validUrl = require('valid-url')
 const redis = require("redis");
 const { promisify } = require("util");
 
+
 //Connect to redis
 const redisClient = redis.createClient(
   12538,
@@ -43,9 +44,10 @@ const createUrl = async (req, res) => {
     if (!valid.isEmpty(longUrl)) {
       return res.status(400).send({ status: false, message: "longUrl is mandatory" });
     }
-    if (!validUrl.isUri(longUrl)) {
-      return res.status(400).send({ status: false, message: 'Invalid URL' })
-    }
+    
+    if (!validUrl.isWebUri(longUrl)) return res.status(400).send({ status: false, message: "Oh noo..!! Invalid Url  !!!" })
+
+
 
     //validate uniqueness of longUrl
     //find longUrl in cahedData
