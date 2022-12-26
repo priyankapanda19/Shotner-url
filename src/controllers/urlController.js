@@ -97,7 +97,7 @@ const createUrl = async (req, res) => {
     //create document amd send response
     let data = await urlModel.create(requestBody);
     const createUrl = ({ urlCode: data.urlCode, longUrl: data.longUrl, shortUrl: data.shortUrl })
-    await SET_ASYNC(`${longUrl}`, 3600, JSON.stringify(createUrl))
+    await SET_ASYNC(`${longUrl}`, 60, JSON.stringify(createUrl))
     return res.status(201).send({ status: true, date: createUrl });
 
   }
